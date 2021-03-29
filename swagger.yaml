@@ -1,0 +1,406 @@
+---
+openapi: 3.0.1
+info:
+  title: WalletTransactionSystem
+  description: APIs for adding adding wallet for a user and doing transactions on it.
+  version: "1.0"
+servers:
+- url: http://localhost:5000
+paths:
+  /v1/wallet/:
+    post:
+      description: Create Wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body'
+            examples:
+              "0":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561243"
+                      },
+                      "amount": "1000"
+                  }
+              "1":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561239"
+                      },
+                      "amount": 1000
+                  }
+              "2":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": 1000
+                  }
+              "3":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "100"
+                  }
+              "4":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "1000l"
+                  }
+              "5":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "1000"
+                  }
+              "6":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "789456123"
+                      },
+                      "amount": "1000"
+                  }
+      responses:
+        "201":
+          description: Wallet Created Successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_201'
+              examples:
+                "0":
+                  value: |
+                    {"balance":1000.0,"user":{"phone":"7894561243"}}
+                "1":
+                  value: |
+                    {"balance":1000.0,"user":{"phone":"7894561239"}}
+        "400":
+          description: Wallet already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+              examples:
+                "0":
+                  value: |
+                    {"errors":["Wallet already exists for user : 7894561230"]}
+                "1":
+                  value: |
+                    {"errors":[{"balance":["Amount must be grater than 500.00"]}]}
+                "2":
+                  value: |
+                    {"errors":[{"balance":["Not a valid number."]}]}
+                "3":
+                  value: |
+                    {"errors":["Wallet already exists for user : 7894561230"]}
+                "4":
+                  value: |
+                    {"errors":[{"phone":["Invalid phone number."]}]}
+      servers:
+      - url: http://localhost:5000
+    servers:
+    - url: http://localhost:5000
+  /v1/wallet/deduct:
+    put:
+      description: Deduct money from wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_1'
+            examples:
+              "0":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "6000.005"
+                  }
+              "1":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "1000.005"
+                  }
+              "2":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": 1000.005
+                  }
+              "3":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "1000l"
+                  }
+              "4":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "789456123"
+                      },
+                      "amount": "1000"
+                  }
+      responses:
+        "200":
+          description: Money successfully deducted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_201'
+              examples:
+                "0":
+                  value: |
+                    {"balance":4500.88,"user":{"phone":"7894561230"}}
+                "1":
+                  value: |
+                    {"balance":5500.885,"user":{"phone":"7894561230"}}
+        "400":
+          description: Insufficient balance/ Invalid data in request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+              examples:
+                "0":
+                  value: |
+                    {"errors":["Insufficient balance for user : <id : 5, Phone : 7894561230>"]}
+                "1":
+                  value: |
+                    {"errors":["could not convert string to float: '1000l'"]}
+                "2":
+                  value: |
+                    {"errors":[{"phone":["Invalid phone number."]}]}
+      servers:
+      - url: http://localhost:5000
+    servers:
+    - url: http://localhost:5000
+  /v1/wallet/get_balance:
+    post:
+      description: Get wallet details for given user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_2'
+            examples:
+              "0":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561345"
+                      }
+                  }
+              "1":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "789456124"
+                      }
+                  }
+              "2":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561243"
+                      }
+                  }
+      responses:
+        "200":
+          description: Successfully fetched wallet details for the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_201'
+              examples:
+                "0":
+                  value: |
+                    {"balance":1000.0,"user":{"phone":"7894561243"}}
+        "400":
+          description: Invalid Data in request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400_1'
+              examples:
+                "0":
+                  value: |
+                    {"errors":{"phone":["Invalid phone number."]}}
+        "404":
+          description: Wallet not found for the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_404'
+              examples:
+                "0":
+                  value: |
+                    {"errors":["Wallet not found for user : 7894561345"]}
+      servers:
+      - url: http://localhost:5000
+    servers:
+    - url: http://localhost:5000
+  /v1/wallet/add:
+    put:
+      description: Add money to wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_3'
+            examples:
+              "0":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "1000.005"
+                  }
+              "1":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": 1000.005
+                  }
+              "2":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "7894561230"
+                      },
+                      "amount": "1000l"
+                  }
+              "3":
+                value: |-
+                  {
+                      "user": {
+                          "phone": "789456123"
+                      },
+                      "amount": "1000"
+                  }
+      responses:
+        "200":
+          description: Money added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_201'
+              examples:
+                "0":
+                  value: |
+                    {"balance":6500.89,"user":{"phone":"7894561230"}}
+                "1":
+                  value: |
+                    {"balance":5500.885,"user":{"phone":"7894561230"}}
+        "400":
+          description: Invalid data in request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_400'
+              examples:
+                "0":
+                  value: |
+                    {"errors":["could not convert string to float: '1000l'"]}
+                "1":
+                  value: |
+                    {"errors":[{"phone":["Invalid phone number."]}]}
+      servers:
+      - url: http://localhost:5000
+    servers:
+    - url: http://localhost:5000
+components:
+  schemas:
+    v1wallet_user:
+      type: object
+      properties:
+        phone:
+          type: string
+    body:
+      type: object
+      properties:
+        amount:
+          type: string
+        user:
+          $ref: '#/components/schemas/v1wallet_user'
+    inline_response_201:
+      type: object
+      properties:
+        balance:
+          type: number
+        user:
+          type: object
+          properties:
+            phone:
+              type: string
+    inline_response_400:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              phone:
+                type: array
+                items:
+                  type: string
+    body_1:
+      type: object
+      properties:
+        amount:
+          type: string
+        user:
+          $ref: '#/components/schemas/v1wallet_user'
+    body_2:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/v1wallet_user'
+    inline_response_400_1:
+      type: object
+      properties:
+        errors:
+          type: object
+          properties:
+            phone:
+              type: array
+              items:
+                type: string
+    inline_response_404:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+    body_3:
+      type: object
+      properties:
+        amount:
+          type: string
+        user:
+          $ref: '#/components/schemas/v1wallet_user'
