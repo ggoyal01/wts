@@ -59,7 +59,6 @@ def credit_wallet():
         user = USER_SCHEMA.load(request.json, unknown=EXCLUDE)
         amount = float(request.json.get('amount'))
     except ValidationError as e:
-        print(e.messages)
         return make_response({'errors': [e.messages]}, 400, {'Content-Type': 'application/json'})
     except ValueError as e:
         return make_response({'errors': e.args}, 400, {'Content-Type': 'application/json'})
@@ -75,7 +74,6 @@ def credit_wallet():
     for i in range(Config.RETRIES_ON_DB_LOCK):
         try:
             wallet, user = result     # Values in result are getting updated after commit of other transaction. So, no need to query again.
-            print(str(amount) + "--------" + str(result))
             transaction_log = TransactionLog(wallet_id=wallet.id, amount=amount)
             wallet.balance += amount
             db.session.add(transaction_log)
@@ -97,7 +95,6 @@ def debit_wallet():
         user = USER_SCHEMA.load(request.json, unknown=EXCLUDE)
         amount = float(request.json.get('amount'))
     except ValidationError as e:
-        print(e.messages)
         return make_response({'errors': [e.messages]}, 400, {'Content-Type': 'application/json'})
     except ValueError as e:
         return make_response({'errors': e.args}, 400, {'Content-Type': 'application/json'})
@@ -112,7 +109,6 @@ def debit_wallet():
     err_msgs = None
     for i in range(Config.RETRIES_ON_DB_LOCK):
         wallet, user = result
-        print(str(amount) + "--------" + str(result))
         wallet.balance -= amount
         if wallet.balance < Config.MIN_BAL:
             return make_response({'errors': ["Insufficient balance for user : {user}".format(user=user.phone)]}, 400,
