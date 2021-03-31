@@ -43,7 +43,7 @@ class Wallet(db.Model):
 
 class WalletSchema(Schema):
     user = fields.Nested(UserSchema)
-    balance = fields.Float(validate=validate.Range(min=float(Config.MIN_BAL),
+    balance = fields.Float(validate=validate.Range(min=Config.MIN_BAL,
                                                    error="Amount must be grater than {min_bal}".format(min_bal=
                                                                                                        Config.MIN_BAL)))
 

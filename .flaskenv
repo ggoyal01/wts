@@ -1,3 +1,4 @@
 FLASK_APP=server
-DATABASE_URI="sqlite:///${PWD}/app.db"
+DATABASE_URI="sqlite:///${PWD}/wts.db"
 MIN_BAL=500.00
+RETRIES_ON_DB_LOCK=5

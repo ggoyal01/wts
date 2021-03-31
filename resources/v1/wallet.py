@@ -1,3 +1,6 @@
+from datetime import datetime
+from time import sleep
+
 from flask import request, make_response, Blueprint, current_app
 from marshmallow import ValidationError, EXCLUDE
 from sqlalchemy.exc import SQLAlchemyError
@@ -61,25 +64,31 @@ def credit_wallet():
     except ValueError as e:
         return make_response({'errors': e.args}, 400, {'Content-Type': 'application/json'})
 
+    db.session.begin_nested()    # Have to keep it here because we want Read and Write/Update in one transaction.
     result = db.session.query(Wallet, User).filter(User.phone == user.phone).filter(Wallet.user_id == User.id)\
         .one_or_none()
     if result is None:
         return make_response({'errors': ["Wallet not found for user : {user}".format(user=user.phone)]},
                              404, {'Content-Type': 'application/json'})
 
-    try:
-        wallet, user = result
-        wallet.balance += amount
+    err_msgs = None
+    for i in range(Config.RETRIES_ON_DB_LOCK):
+        try:
+            wallet, user = result     # Values in result are getting updated after commit of other transaction. So, no need to query again.
+            print(str(amount) + "--------" + str(result))
+            transaction_log = TransactionLog(wallet_id=wallet.id, amount=amount)
+            wallet.balance += amount
+            db.session.add(transaction_log)
+            db.session.commit()
 
-        transaction_log = TransactionLog(wallet_id=wallet.id, amount=amount)
-        db.session.add(transaction_log)
-        db.session.commit()
+            data = {**USER_SCHEMA.dump(user), **WALLET_SCHEMA.dump(wallet)}
+            return make_response(data, 200, {'Content-Type': 'application/json'})
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            err_msgs = e.orig.args
+            sleep(1)
 
-        data = {**USER_SCHEMA.dump(user), **WALLET_SCHEMA.dump(wallet)}
-        return make_response(data, 200, {'Content-Type': 'application/json'})
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return make_response({'errors': e.orig.args}, 500, {'Content-Type': 'application/json'})
+    return make_response({'errors': err_msgs}, 500, {'Content-Type': 'application/json'})
 
 
 @wallet_bp.route('/deduct', methods=['PUT'])
@@ -93,28 +102,35 @@ def debit_wallet():
     except ValueError as e:
         return make_response({'errors': e.args}, 400, {'Content-Type': 'application/json'})
 
+    db.session.begin_nested()
     result = db.session.query(Wallet, User).filter(User.phone == user.phone).filter(Wallet.user_id == User.id)\
         .one_or_none()
     if result is None:
         return make_response({'errors': ["Wallet not found for user : {user}".format(user=user.phone)]},
                              404, {'Content-Type': 'application/json'})
 
-    wallet, user = result
-    wallet.balance -= amount
-    if wallet.balance < float(Config.MIN_BAL):
-        return make_response({'errors': ["Insufficient balance for user : {user}".format(user=user.phone)]}, 400,
-                             {'Content-Type': 'application/json'})
+    err_msgs = None
+    for i in range(Config.RETRIES_ON_DB_LOCK):
+        wallet, user = result
+        print(str(amount) + "--------" + str(result))
+        wallet.balance -= amount
+        if wallet.balance < Config.MIN_BAL:
+            return make_response({'errors': ["Insufficient balance for user : {user}".format(user=user.phone)]}, 400,
+                                 {'Content-Type': 'application/json'})
 
-    try:
-        transaction_log = TransactionLog(wallet_id=wallet.id, amount=-amount)
-        db.session.add(transaction_log)
-        db.session.commit()
+        try:
+            transaction_log = TransactionLog(wallet_id=wallet.id, amount=-amount)
+            db.session.add(transaction_log)
+            db.session.commit()
 
-        data = {**USER_SCHEMA.dump(user), **WALLET_SCHEMA.dump(wallet)}
-        return make_response(data, 200, {'Content-Type': 'application/json'})
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return make_response({'errors': e.orig.args}, 500, {'Content-Type': 'application/json'})
+            data = {**USER_SCHEMA.dump(user), **WALLET_SCHEMA.dump(wallet)}
+            return make_response(data, 200, {'Content-Type': 'application/json'})
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            err_msgs = e.orig.args
+            sleep(1)
+
+    return make_response({'errors': err_msgs}, 500, {'Content-Type': 'application/json'})
 
 
 @wallet_bp.route('/get_balance', methods=['POST'])
